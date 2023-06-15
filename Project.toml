@@ -1,7 +1,7 @@
 name = "DataDrivenAcoustics"
 uuid = "b376a22e-6432-4b80-a794-261b95783a4a"
 authors = ["Li Kexin <kexin@nus.edu.sg> and Mandar Chitre <mandar@nus.edu.sg>"]
-version = "0.1.0-DEV"
+version = "0.1.0"
 
 [compat]
 julia = "1.6"
