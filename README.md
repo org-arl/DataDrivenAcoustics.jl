@@ -1,6 +1,6 @@
 # DataDrivenAcoustics.jl
 
-Conventional acoustic propagation models require accurate environmental knowledge to be available beforehand. While data-driven techniques might allow us to model acoustic propagation without the need for extensive prior environmental knowledge, such techniques tend to be data-hungry. We propose a physics-based data-driven acoustic propagation modeling approach that enables us to train models with only a small amount of data. The proposed modeling framework is not only data-efficient, but also offers flexibility to incorporate varying degrees of environmental knowledge, and generalizes well to permit extrapolation beyond the area where data were collected. 
+Conventional acoustic propagation models require accurate environmental knowledge to be available beforehand. While data-driven techniques might allow us to model acoustic propagation without the need for extensive prior environmental knowledge, such techniques tend to be data-hungry. We propose a physics-based data-driven acoustic propagation modeling approach that enables us to train models with only a small amount of data. The proposed modeling framework is not only data-efficient, but also offers flexibility to incorporate varying degrees of environmental knowledge, and generalizes well to permit extrapolation beyond the area where data were collected.
 
 ## Installation
 
@@ -25,11 +25,10 @@ julia> models()
 There are four formulations provided in current package:
 | Formulation | Description | Calculation function |
 |:-----|:---------|:---------|
-| RayBasis2D | 2D plane wave formulation. | RayBasis2DCal |
-| RayBasis2DCurv | 2D plane wave formulation by modeling curvature of wavefornt.| RayBasis2DCurvCal|
-| RayBasis3D | 3D spherical wave formulation. | RayBasis3DCal |
-| RayBasis3DRCNN | 3D spherical wave formulation with reflection coefficient neural network (RCNN) as part of the model. | RayBasis3DRCNNCal |
-
+| `RayBasis2D` | 2D plane wave formulation. | `RayBasis2DCal` |
+| `RayBasis2DCurv` | 2D plane wave formulation by modeling curvature of wavefornt.| `RayBasis2DCurvCal`|
+| `RayBasis3D` | 3D spherical wave formulation. | `RayBasis3DCal` |
+| `RayBasis3DRCNN` | 3D spherical wave formulation with reflection coefficient neural network (RCNN) as part of the model. | `RayBasis3DRCNNCal` |
 
 ## Usage
 
@@ -42,7 +41,7 @@ There are four formulations provided in current package:
 - `salinity`: water salinity (default: 35)
 - `seasurface`: surface property (dafault: Vacuum)
 - `seabed`: seabed property (default: SandySilt)
--`tx`: source location (default: missing)
+- `tx`: source location (default: missing)
 
 
 `ModelTrainingSetting` contains parameters related to model training setups.
@@ -50,12 +49,12 @@ There are four formulations provided in current package:
 - `trainloss`: loss function used in training and model update
 - `dataloss`: data loss function to calculate benchmarking validation error for early stopping
 - `ratioₜ`:data split ratio = number of training data / (number of training data + number of validation data) (default: 0.7)
-- set `seed` to true to seed random data selection order (default: false)
+- set `seed` to true to seed random data selection order (default: `false`)
 - `maxepoch`: maximum number of training epoches allowed (default: 10000000)
 - `ncount`: maximum number of tries before reducing learning rate (default: 5000)
 -  model training ends once learning rate is smaller than `minlearnrate` (default: 1e-6)
-- learning rate is reduced by `reducedlearnrate` once `ncount` is reached (default: 10) 
-- set`showloss` to true to show  training and validation errors while training the model (default: false)  
+- learning rate is reduced by `reducedlearnrate` once `ncount` is reached (default: 10)
+- set`showloss` to true to show  training and validation errors while training the model (default: `false`)
 
 
 `RayBasis2D`: 2D plane wave formulation. This formulation does not require knowledge of channel geometry.
@@ -82,7 +81,7 @@ There are four formulations provided in current package:
 - `trainable`: trainable parameters (default: empty)
 
 
-`RayBasis3D` 3D spherical wave formulation. 
+`RayBasis3D` 3D spherical wave formulation.
 - `env`: data driven underwater environment
 - `trainsettings`: model training setups
 - `calculatefield`: function to calculate acoustic field (default: RayBasis3DCal)
@@ -103,7 +102,7 @@ There are four formulations provided in current package:
 `RayBasis3DRCNN`: 3D spherical wave formulation with reflection coefficient neural network (RCNN) as part of the model. This formulation requires knowledge of channel geometry to precalculate nominal ray arrival directions, propagation distance and incident angles.
 - `env`: data driven underwater environment
 - `trainsettings`: model training setups
-- `RCNN`: neural network to model seabed reflection coefficient 
+- `RCNN`: neural network to model seabed reflection coefficient
 - `calculatefield`: function to calculate acoustic field (default: RayBasis3DRCNNCal)
 - `nrays`: number of rays (default: 60)
 - `eθ`: error to nominal azimuthal angle of arrival rays in radian (default: missing)
@@ -115,7 +114,7 @@ There are four formulations provided in current package:
 **Example:**
 If you have a set of measured pressure amplitudes and their corresponding measurement locations as training and validation data, you can directly load them. The location data should be a matrix with dimensions [dimension of single location data x number of data points]. The field data should be a matrix with dimensions [1 x number of data points].
 
-Alternatively, you have the option to utilize the propagation models available in _Undertwateracoustic.jl_, _AcousticRayTracers.jl_ or _AcousticsToolbox.jl_ to generate synthetic acoustic data. 
+Alternatively, you have the option to utilize the propagation models available in `Undertwateracoustic.jl`, `AcousticRayTracers.jl` or `AcousticsToolbox.jl` to generate synthetic acoustic data.
 
 Here, we use PekerisRayModel to generate synthetic acoustic measurements and ground truth fields within an area of interest:
 
@@ -128,7 +127,7 @@ julia> env = UnderwaterEnvironment();
 julia> pm = PekerisRayModel(env, 7);
 ```
 
-We assume an omnidirectional 1 kHz transmitter `tx` at a depth of 5 m at the origin. We sample modeled acoustic from the 7-rays PekerisRayModel `pm` at 500 random locations using `modelfield`. The 500 measurements are used to train our physics-based data-driven propagation model. 
+We assume an omnidirectional 1 kHz transmitter `tx` at a depth of 5 m at the origin. We sample modeled acoustic from the 7-rays `PekerisRayModel` `pm` at 500 random locations using `modelfield`. The 500 measurements are used to train our physics-based data-driven propagation model.
 
 ```julia
 julia> TX = [0.0, -5.0];
@@ -163,7 +162,7 @@ You need to formulate a ray basis neural network (RBNN) model that best suits th
 
 ```julia
 julia> datapm = RayBasis2DCurv(dataenv, ModelTrainingSetting(0.005, rmseloss, rmseloss));
-``` 
+```
 This line of code automates the search and random initialization for trainable parameters of the defined RBNN model, allowing the model to learn from data and return a model with optimized trainable parameters.
 
 To query field at an unvisited location, simply call the trained RBNN model `datapm` with a location coordinate:
@@ -186,8 +185,8 @@ You can ask for a list of significant arrivals[^1]:
 julia> arrivals(datapm, AcousticReceiver(50, -10))
 
 47×2 DataFrame
- Row │ Amplitude  Phase      
-     │ Float64    Float64    
+ Row │ Amplitude  Phase
+     │ Float64    Float64
 ─────┼───────────────────────
    1 │  -33.748    0.531266
    2 │  -34.4891  -0.869176
@@ -203,7 +202,7 @@ julia> arrivals(datapm, AcousticReceiver(50, -10))
   46 │  -61.2852  -0.259114
   47 │  -63.6387  -1.44559
 ```
-[^1]: Significant arrivals refers to arrivals with amplitudes exceeding maximum arrival amplitude minus a threshold. Threshold is a keyword argument in `arrivals` and its default value is set to 30dB.
+[^1]: Significant arrivals refers to arrivals with amplitudes exceeding maximum arrival amplitude minus a `threshold`. Threshold is a keyword argument in `arrivals` and its default value is set to 30 dB.
 
 
 Our proposed physics-based data-driven propagation modeling technique has the capability to extrapolate fields in areas where no measurements have been taken. The region that ranging from 100 m to 200 m is extrapolated from the trained model `datapm`.
