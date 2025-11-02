@@ -4,11 +4,51 @@ using BangBang
 using Zygote
 
 
-export RayBasis2D, RayBasis2DCal, RayBasis2DCurv, RayBasis2DCurvCal, RayBasis3D, RayBasis3DCal, RayBasis3DRCNN, RayBasis3DRCNNCal
+export RayBasis2D, RayBasis2DCal, RayBasis2DCurv, RayBasis2DCurvCal, RayBasis3D, RayBasis3DCal, RayBasis3DRCNN, RayBasis3DRCNNCal, RayBasisNN
 
 abstract type DataDrivenUnderwaterEnvironment end
 
 abstract type DataDrivenPropagationModel{T<:DataDrivenUnderwaterEnvironment} end
+
+"""
+$(SIGNATURES)
+A smart constructor for a Ray-Basis Neural Network.
+
+This function automatically selects the appropriate data-driven model
+(e.g., RayBasis2D) based on the properties of the
+provided environment and other arguments.
+"""
+function RayBasisNN(env::DataDrivenUnderwaterEnvironment; kwargs...)
+
+    # --- Get key properties from the environment ---
+    # Get location dimension (2 for 2D, 3 for 3D)
+    dims = size(env.locations)[1]
+
+    # Check for known geometry
+    has_tx = env.tx !== missing
+    has_depth = env.waterdepth !== missing
+
+    # --- Dispatch Logic ---
+
+    # Case 1: Far-field, 2D, no known geometry
+    # implies a 2D environment and no source location.
+    # dispatch to RayBasis2D (plane wave model).
+    if dims == 2 && !has_tx
+        println("Info: 2D environment, no source. Initializing RayBasis2D (plane wave) model.")
+
+        # Pass the keyword arguments (like `nrays=60`) to the real constructor
+        return RayBasis2D(env; kwargs...)
+    end
+
+
+    # Add other cases here...
+
+
+    # --- Fallback ---
+    throw(ArgumentError("Could not automatically determine a model for the provided environment. " *
+                        "Dimensions: $(dims)D, Known Source: $(has_tx), Known Depth: $(has_depth). " *
+                        "Please call a specific model (e.g., RayBasis2D) directly."))
+end
 
 """
 $(TYPEDEF)
