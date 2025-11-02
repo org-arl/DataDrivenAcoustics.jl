@@ -106,8 +106,20 @@ for i in 1 : 1 : size(rxpos)[2]
 end
 dataenv = DataDrivenUnderwaterEnvironment(rxpos, tloss; frequency = 1000.0, soundspeed = 1540.0);
 
-datapm = RayBasis2D(dataenv; inilearnrate = 0.005, seed = true)
+# ... (Data generation) ...
+dataenv = DataDrivenUnderwaterEnvironment(rxpos, tloss; frequency = 1000.0, soundspeed = 1540.0);
+
+# 1. Call the NEW factory
+# (Note: nrays is not passed, so it will use the default from RayBasis2D)
+datapm = RayBasisNN(dataenv)
+
+# 2. Test that the factory gave you the RIGHT *untrained* model
 @test datapm isa RayBasis2D
+
+# 3. Call the NEW fit! function
+fit!(datapm; inilearnrate = 0.005, seed = true)
+
+# 4. Run the SAME tests on the *trained* model
 test2d(datapm)
 arr = arrivals(datapm, nothing, AcousticReceiver(50.0, -10.0))
 @test arr isa AbstractVector{<:DataDrivenAcoustics.RayArrival}
@@ -146,10 +158,10 @@ arr = arrivals(datapm, nothing, AcousticReceiver(50.0, 0.0, -10.0))
 
 Random.seed!(1)
 
-RCNN = Chain(  
+RCNN = Chain(
     x -> (x ./ 0.5f0 .* π .- 0.5f0) .* 2.0f0, #normalization of incident angle
     Dense(1, 30, sigmoid),
-    Dense(30, 50, sigmoid),  
+    Dense(30, 50, sigmoid),
     Dense(50, 2),
 )
 dataenv = DataDrivenUnderwaterEnvironment(rxpos, tloss; frequency = 1000.0, soundspeed = 1540.0, waterdepth = 20.0, tx = AcousticSource(0.0, 0.0, -5.0, 1000.0))
