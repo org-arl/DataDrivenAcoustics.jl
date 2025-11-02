@@ -36,14 +36,14 @@ A 2D plane wave RBNN formualtion.
 """
 Base.@kwdef struct RayBasis2D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenPropagationModel{T1}
     env::T1
-    calculatefield::T2 
-    nrays::Int 
-    θ::T3 
+    calculatefield::T2
+    nrays::Int
+    θ::T3
     A::T3
-    ϕ::T3 
-    k::T4 
+    ϕ::T3
+    k::T4
     trainable::T5
-    function RayBasis2D(env; calculatefield = RayBasis2DCal, nrays = 60, θ = Vector{Missing}(undef, nrays), A = Vector{Missing}(undef, nrays), 
+    function RayBasis2D(env; calculatefield = RayBasis2DCal, nrays = 60, θ = Vector{Missing}(undef, nrays), A = Vector{Missing}(undef, nrays),
         ϕ = Vector{Missing}(undef, nrays), k = missing, inilearnrate::Real = 0.001, trainloss = rmseloss, dataloss = rmseloss, ratioₜ::Real = 0.7,
         seed = false, maxepoch::Int = 10000000, ncount::Int = 5000, minlearnrate::Real = 1e-6 , reducedlearnrate::Real = 10.0, showloss::Bool = false)
 
@@ -51,7 +51,7 @@ Base.@kwdef struct RayBasis2D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenP
         size(env.locations)[1] == 2 || throw(ArgumentError("RayBasis2D only supports 2D environment"))
         ratioₜ <= 1.0 || throw(ArgumentError("Training data split ratio can not exceed 1"))
         ratioₜ > 0.0 || throw(ArgumentError("Training data split ratio should be larger than 0"))
-        
+
         seed == true && Random.seed!(6)
 
         if sum(ismissing.(θ)) > 0
@@ -59,7 +59,7 @@ Base.@kwdef struct RayBasis2D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenP
             trainable = push!!(trainable, θ)
         end
         if sum(ismissing.(A)) > 0
-            A = rand(nrays) 
+            A = rand(nrays)
             trainable = push!!(trainable, A)
         end
         if sum(ismissing.(ϕ)) > 0
@@ -68,15 +68,17 @@ Base.@kwdef struct RayBasis2D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenP
         end
 
         if k === missing
-            if env.soundspeed !== missing && env.frequency !== missing 
+            if env.soundspeed !== missing && env.frequency !== missing
                 k = 2.0f0 * π * env.frequency / env.soundspeed
             else
-                k = 2.0f0 * π * 2000.0f0 / 1500.0f0 
+                k = 2.0f0 * π * 2000.0f0 / 1500.0f0
                 trainable = push!!(trainable, k)
             end
         end
         x = new{typeof(env), typeof(calculatefield), typeof(θ), typeof(k), typeof(trainable)}(env, calculatefield, nrays, θ, A, ϕ, k, trainable)
-        ModelFit!(x, inilearnrate, trainloss, dataloss, ratioₜ, seed, maxepoch, ncount, minlearnrate, reducedlearnrate, showloss)
+
+        # removed ModelFit() call to allow user to control training process outside of constructor
+
         return x
     end
 end
@@ -125,17 +127,17 @@ A 2D plane wave RBNN formualtion by modeling curvature of wavefornt.
 """
 Base.@kwdef struct RayBasis2DCurv{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenPropagationModel{T1}
     env::T1
-    calculatefield::T2 
-    nrays::Int 
-    θ::T3 
-    A::T3 
-    ϕ::T3 
+    calculatefield::T2
+    nrays::Int
+    θ::T3
+    A::T3
+    ϕ::T3
     d::T3
-    k::T4 
-    trainable::T5 
-    function RayBasis2DCurv(env;  calculatefield = RayBasis2DCurvCal, nrays = 60, θ = Vector{Missing}(undef, nrays), 
-        A = Vector{Missing}(undef, nrays), ϕ= Vector{Missing}(undef, nrays), d = Vector{Missing}(undef, nrays), k = missing, 
-        inilearnrate::Real = 0.001, trainloss = rmseloss, dataloss = rmseloss, ratioₜ::Real = 0.7, seed = false, maxepoch::Int = 10000000, 
+    k::T4
+    trainable::T5
+    function RayBasis2DCurv(env;  calculatefield = RayBasis2DCurvCal, nrays = 60, θ = Vector{Missing}(undef, nrays),
+        A = Vector{Missing}(undef, nrays), ϕ= Vector{Missing}(undef, nrays), d = Vector{Missing}(undef, nrays), k = missing,
+        inilearnrate::Real = 0.001, trainloss = rmseloss, dataloss = rmseloss, ratioₜ::Real = 0.7, seed = false, maxepoch::Int = 10000000,
         ncount::Int = 5000, minlearnrate::Real = 1e-6 , reducedlearnrate::Real = 10.0, showloss::Bool = false)
 
         size(env.locations)[1] == 2 || throw(ArgumentError("RayBasis2DCurv only supports 2D environment"))
@@ -147,7 +149,7 @@ Base.@kwdef struct RayBasis2DCurv{T1, T2, T3<:AbstractVector, T4, T5} <: DataDri
             trainable = push!!(trainable, θ)
         end
         if sum(ismissing.(A)) > 0
-            A = rand(nrays) 
+            A = rand(nrays)
             trainable = push!!(trainable, A)
         end
         if sum(ismissing.(ϕ)) > 0
@@ -155,17 +157,17 @@ Base.@kwdef struct RayBasis2DCurv{T1, T2, T3<:AbstractVector, T4, T5} <: DataDri
             trainable = push!!(trainable, ϕ)
         end
         if sum(ismissing.(d)) > 0
-            d = rand(nrays) 
+            d = rand(nrays)
             trainable = push!!(trainable, d)
         end
         if k === missing
-            if env.soundspeed !== missing && env.frequency !== missing 
+            if env.soundspeed !== missing && env.frequency !== missing
                 k = 2.0f0 * π * env.frequency / env.soundspeed
             else
-                k = 2.0f0 * π * 2000.0f0 / 1500.0f0 
+                k = 2.0f0 * π * 2000.0f0 / 1500.0f0
                 trainable = push!!(trainable, k)
             end
-        end       
+        end
         x = new{typeof(env), typeof(calculatefield), typeof(θ), typeof(k), typeof(trainable)}(env, calculatefield, nrays, θ, A, ϕ, d, k, trainable)
         ModelFit!(x, inilearnrate,trainloss, dataloss, ratioₜ, seed, maxepoch, ncount, minlearnrate, reducedlearnrate, showloss)
         return x
@@ -185,7 +187,7 @@ function RayBasis2DCurvCal(r::RayBasis2DCurv, xy::AbstractArray; showarrivals = 
     l = sqrt.(xx.^2 + yy.^2)
     kx = r.k .* l .+ r.ϕ
     showarrivals == false ? (return sum(r.A ./ l .* cis.(kx), dims = 1)) : (return r.A ./ l.* cis.(kx))
-end 
+end
 
 Flux.@functor RayBasis2DCurv
 Flux.trainable(r::RayBasis2DCurv) = r.trainable
@@ -224,23 +226,23 @@ A 3D spherical wave RBNN formualtion.
 Base.@kwdef struct RayBasis3D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenPropagationModel{T1}
     env::T1
     calculatefield::T2
-    nrays::Int 
+    nrays::Int
     θ::T3
-    ψ::T3 
+    ψ::T3
     d::T3
-    eθ::T3 
+    eθ::T3
     eψ::T3
-    ed::T3 
+    ed::T3
     A::T3
-    ϕ::T3 
+    ϕ::T3
     k::T4
     trainable::T5
-    function RayBasis3D(env; calculatefield = RayBasis3DCal, nrays = 60, θ = Vector{Missing}(undef, nrays), ψ = Vector{Missing}(undef, nrays), 
-        d = Vector{Missing}(undef, nrays), eθ = Vector{Missing}(undef, nrays), eψ = Vector{Missing}(undef, nrays), ed = Vector{Missing}(undef, nrays), 
-        A = Vector{Missing}(undef, nrays), ϕ = Vector{Missing}(undef, nrays), k = missing,  inilearnrate::Real = 0.001, trainloss = rmseloss, 
-        dataloss = rmseloss, ratioₜ::Real = 0.7, seed = false, maxepoch::Int = 10000000, ncount::Int = 5000, minlearnrate::Real = 1e-6 , 
+    function RayBasis3D(env; calculatefield = RayBasis3DCal, nrays = 60, θ = Vector{Missing}(undef, nrays), ψ = Vector{Missing}(undef, nrays),
+        d = Vector{Missing}(undef, nrays), eθ = Vector{Missing}(undef, nrays), eψ = Vector{Missing}(undef, nrays), ed = Vector{Missing}(undef, nrays),
+        A = Vector{Missing}(undef, nrays), ϕ = Vector{Missing}(undef, nrays), k = missing,  inilearnrate::Real = 0.001, trainloss = rmseloss,
+        dataloss = rmseloss, ratioₜ::Real = 0.7, seed = false, maxepoch::Int = 10000000, ncount::Int = 5000, minlearnrate::Real = 1e-6 ,
         reducedlearnrate::Real = 10.0, showloss::Bool = false)
-        
+
         trainable = ()
         seed == true && Random.seed!(6)
         size(env.locations)[1] == 3 || throw(ArgumentError("RayBasis3D only supports 3D environment."))
@@ -261,7 +263,7 @@ Base.@kwdef struct RayBasis3D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenP
             trainable = push!!(trainable, d)
             ed = zeros(nrays) .* π
         end
-        if sum(ismissing.(eθ)) > 0 
+        if sum(ismissing.(eθ)) > 0
             eθ = zeros(nrays) .* π
             trainable = push!!(trainable, eθ)
         end
@@ -275,7 +277,7 @@ Base.@kwdef struct RayBasis3D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenP
         end
 
         if sum(ismissing.(A)) > 0
-            A = rand(nrays) 
+            A = rand(nrays)
             trainable = push!!(trainable, A)
         end
         if sum(ismissing.(ϕ)) > 0
@@ -283,13 +285,13 @@ Base.@kwdef struct RayBasis3D{T1, T2, T3<:AbstractVector, T4, T5} <: DataDrivenP
             trainable = push!!(trainable, ϕ)
         end
         if k === missing
-            if env.soundspeed !== missing && env.frequency !== missing 
+            if env.soundspeed !== missing && env.frequency !== missing
                 k = 2.0f0 * π * env.frequency / env.soundspeed
             else
-                k = 2.0f0 * π * 2000.0f0 / 1500.0f0 
+                k = 2.0f0 * π * 2000.0f0 / 1500.0f0
                 trainable = push!!(trainable, k)
             end
-        end       
+        end
         x = new{typeof(env), typeof(calculatefield), typeof(θ), typeof(k), typeof(trainable)}(env, calculatefield, nrays, θ, ψ, d,  eθ, eψ, ed, A, ϕ, k, trainable)
         ModelFit!(x, inilearnrate,trainloss, dataloss, ratioₜ, seed, maxepoch, ncount, minlearnrate, reducedlearnrate, showloss)
         return x
@@ -302,10 +304,10 @@ Predict acoustic field at location `xyz` using `RayBasis3D` model. Set `showarri
 `xₒ` is the reference location and can be an arbitrary location.
 """
 function RayBasis3DCal(r::RayBasis3D, xyz::AbstractArray; showarrivals = false, xₒ = [0.0, 0.0, 0.0])
-    x = @view xyz[1:1,:]                
-    y = @view xyz[2:2,:] 
-    z = - @view xyz[3:3,:] 
-  
+    x = @view xyz[1:1,:]
+    y = @view xyz[2:2,:]
+    z = - @view xyz[3:3,:]
+
     xx = x .- (xₒ[1] .- (r.ed .+ r.d) .* cos.(r.eθ .+ r.θ) .* sin.(r.eψ .+ r.ψ))
     yy = y .- (xₒ[2] .- (r.ed .+ r.d) .* sin.(r.eθ .+ r.θ) .* sin.(r.eψ .+ r.ψ))
     zz = z .- (xₒ[3] .- (r.ed .+ r.d) .* cos.(r.eψ .+ r.ψ))
@@ -349,14 +351,14 @@ Base.@kwdef struct RayBasis3DRCNN{T1, T2, T3, T4<:AbstractVector, T5, T6} <: Dat
     env::T1
     RCNN::T2
     calculatefield::T3
-    nrays::Int 
-    θ::T4 
-    ψ::T4 
-    d::T4 
-    k::T5 
-    trainable::T6 
-    function RayBasis3DRCNN(env, RCNN; calculatefield = RayBasis3DRCNNCal, nrays = 60, θ = Vector{Missing}(undef, nrays), ψ = Vector{Missing}(undef, nrays), 
-        d = Vector{Missing}(undef, nrays), k = missing, inilearnrate::Real = 0.001, trainloss = rmseloss, dataloss = rmseloss, ratioₜ::Real = 0.7, 
+    nrays::Int
+    θ::T4
+    ψ::T4
+    d::T4
+    k::T5
+    trainable::T6
+    function RayBasis3DRCNN(env, RCNN; calculatefield = RayBasis3DRCNNCal, nrays = 60, θ = Vector{Missing}(undef, nrays), ψ = Vector{Missing}(undef, nrays),
+        d = Vector{Missing}(undef, nrays), k = missing, inilearnrate::Real = 0.001, trainloss = rmseloss, dataloss = rmseloss, ratioₜ::Real = 0.7,
         seed = false, maxepoch::Int = 10000000, ncount::Int = 5000, minlearnrate::Real = 1e-6 , reducedlearnrate::Real = 10.0, showloss::Bool = false)
 
         trainable = ()
@@ -369,13 +371,13 @@ Base.@kwdef struct RayBasis3DRCNN{T1, T2, T3, T4<:AbstractVector, T5, T6} <: Dat
 
         θ, ψ, d = cartesian2spherical([0.0, 0.0, 0.0].- find_image_src(env.locations[:,1], location(env.tx), nrays, env.waterdepth))
         if k === missing
-            if env.soundspeed !== missing && env.frequency !== missing 
+            if env.soundspeed !== missing && env.frequency !== missing
                 k = 2.0f0 * π * env.frequency / env.soundspeed
             else
-                k = 2.0f0 * π * 2000.0f0 / 1500.0f0 
+                k = 2.0f0 * π * 2000.0f0 / 1500.0f0
                 trainable = push!!(trainable, k)
             end
-        end       
+        end
         x = new{typeof(env), typeof(RCNN), typeof(calculatefield), typeof(θ), typeof(k), typeof(trainable)}(env, RCNN, calculatefield, nrays, θ, ψ, d, k, trainable)
         ModelFit!(x, inilearnrate,trainloss, dataloss, ratioₜ, seed, maxepoch, ncount, minlearnrate, reducedlearnrate, showloss)
         return x
@@ -388,23 +390,23 @@ Predict acoustic field at location `xyz` using `RayBasis3DRCNN` model. Set `show
 `xₒ` is the reference location and can be an arbitrary location.
 """
 function RayBasis3DRCNNCal(r::RayBasis3DRCNN, xyz::AbstractArray; showarrivals = false, xₒ = [0.0, 0.0, 0.0])
-    x = @view xyz[1:1,:]                
-    y = @view xyz[2:2,:] 
-    z = - @view xyz[3:3,:] 
+    x = @view xyz[1:1,:]
+    y = @view xyz[2:2,:]
+    z = - @view xyz[3:3,:]
     xx = x .- (xₒ[1] .- r.d .* cos.(r.θ) .* sin.(r.ψ))
     yy = y .- (xₒ[2] .- r.d .* sin.(r.θ) .* sin.(r.ψ))
     zz = z .- (xₒ[3] .- r.d .* cos.(r.ψ))
 
 
     l = sqrt.(xx.^2.0f0 + yy.^2.0f0 + zz.^2.0f0)
-    j = collect(1: 1: r.nrays) 
+    j = collect(1: 1: r.nrays)
     R = (abs2.(location(r.env.tx)[1] .- x) .+ abs2.(location(r.env.tx)[2] .- y)).^ 0.5f0
-    upward = iseven.(j) 
-    s1 = 2.0f0 .* upward .- 1.0f0 
-    n = div.(j, 2) 
-    s = div.(n .+ upward, 2.0f0) 
-    b = div.(n .+ (1 .- upward), 2.0f0) 
-    s2 = 2.0f0 .* iseven.(n) .- 1.0f0 
+    upward = iseven.(j)
+    s1 = 2.0f0 .* upward .- 1.0f0
+    n = div.(j, 2)
+    s = div.(n .+ upward, 2.0f0)
+    b = div.(n .+ (1 .- upward), 2.0f0)
+    s2 = 2.0f0 .* iseven.(n) .- 1.0f0
     dz = 2.0f0 .* b .* r.env.waterdepth .+ s1 .*location(r.env.tx)[3] .- s1 .* s2 .* z
     incidentangle = Float32.(abs.(atan.(R ./ dz)))
 
@@ -418,7 +420,7 @@ function RayBasis3DRCNNCal(r::RayBasis3DRCNN, xyz::AbstractArray; showarrivals =
 
     for i in 1 : r.nrays
         bufRCNN = r.RCNN(incidentangle[i:i,:])
-        bufRC[i:i,:] = abs.(bufRCNN[1:1,:]) 
+        bufRC[i:i,:] = abs.(bufRCNN[1:1,:])
         bufphase[i:i,:] = bufRCNN[2:2,:]
     end
 
