@@ -2,7 +2,7 @@ using RecipesBase
 using Printf
 
 
-export DataDrivenUnderwaterEnvironment, ModelFit!, transfercoef, transmissionloss, check, plot, rays, eigenrays, arrivals
+export DataDrivenUnderwaterEnvironment, ModelFit!, transfercoef, transmissionloss, check, plot, rays, eigenrays, arrivals, fit!
 
 
 """
@@ -21,18 +21,18 @@ Create an underwater environment for data-driven physics-based propagation model
 - set `dB` to `false` if `measurements` are not in dB scale (default: `true`)
  """
 Base.@kwdef struct BasicDataDrivenUnderwaterEnvironment{T1<:Matrix, T2, T3, T4, T5<:ReflectionModel, T6<:ReflectionModel, T7} <: DataDrivenUnderwaterEnvironment
-    locations::T1 
-    measurements::T1 
+    locations::T1
+    measurements::T1
     soundspeed::T2
-    frequency::T3 
-    waterdepth::T4 
+    frequency::T3
+    waterdepth::T4
     salinity::Real
     seasurface::T5
-    seabed::T6 
-    tx::T7 
+    seabed::T6
+    tx::T7
     dB::Bool
     function BasicDataDrivenUnderwaterEnvironment(locations, measurements; soundspeed = missing, frequency = missing, waterdepth = missing, salinity = 35.0, seasurface = Vacuum, seabed = SandySilt, tx = missing, dB = true)
-        if  tx !== missing 
+        if  tx !== missing
             length(location(tx)) == size(locations)[1] || throw(ArgumentError("Dimension of source location and measurement locations do not match"))
         end
         size(locations)[2] == size(measurements)[2] || throw(ArgumentError("Number of locations and fields measurements do not match"))
@@ -50,15 +50,15 @@ DataDrivenUnderwaterEnvironment(locations, measurements; kwargs...) = BasicDataD
 $(SIGNATURES)
 Train data-driven physics-based propagation model.
 
-- `ini_lr`: initial learning rate 
-- `trainloss`: loss function used in training and model update 
-- `dataloss`: data loss function to calculate benchmarking validation error for early stopping 
-- `ratioₜ`: data split ratio = number of training data/(number of training data + number of validation data) 
-- set `seed` to `true` to seed random data selection order 
+- `ini_lr`: initial learning rate
+- `trainloss`: loss function used in training and model update
+- `dataloss`: data loss function to calculate benchmarking validation error for early stopping
+- `ratioₜ`: data split ratio = number of training data/(number of training data + number of validation data)
+- set `seed` to `true` to seed random data selection order
 - `maxepoch`: maximum number of training epoches allowed
 - `ncount`: maximum number of tries before reducing learning rate
--  model training ends once learning rate is smaller than `minlearnrate` 
-- learning rate is reduced by `reducedlearnrate` once `ncount` is reached 
+-  model training ends once learning rate is smaller than `minlearnrate`
+- learning rate is reduced by `reducedlearnrate` once `ncount` is reached
 - set `showloss` to true to display training and validation errors during the model training process, if the validation error is historically the best
 """
 function ModelFit!(r::DataDrivenPropagationModel, inilearnrate, trainloss, dataloss, ratioₜ, seed, maxepoch, ncount, minlearnrate, reducedlearnrate, showloss)
@@ -70,9 +70,9 @@ function ModelFit!(r::DataDrivenPropagationModel, inilearnrate, trainloss, datal
     bestloss = dataloss(rᵥ, pᵥ, r)
     while true
         Flux.train!((x,y) -> trainloss(x, y, r), Flux.params(r), [(rₜ, pₜ)], opt)
-        tmploss = dataloss(rᵥ, pᵥ, r) 
+        tmploss = dataloss(rᵥ, pᵥ, r)
         epoch += 1
-        if tmploss < bestloss 
+        if tmploss < bestloss
             bestloss = tmploss
             # bestmodel = deepcopy(Flux.params(r))
             bestmodel = r
@@ -81,18 +81,55 @@ function ModelFit!(r::DataDrivenPropagationModel, inilearnrate, trainloss, datal
         else
             count += 1
         end
-        epoch > maxepoch && break     
+        epoch > maxepoch && break
         if count > ncount
             count = 0
             # Flux.loadparams!(r, bestmodel)
             Flux.loadmodel!(r, bestmodel)
             opt.eta /= reducedlearnrate
-            opt.eta < minlearnrate && break 
-            showloss && println("********* reduced learning rate: ",opt.eta, " *********" )     
+            opt.eta < minlearnrate && break
+            showloss && println("********* reduced learning rate: ",opt.eta, " *********" )
         end
     end
     r
-end 
+end
+
+"""
+$(SIGNATURES)
+Train a data-driven propagation model using the data in its environment.
+
+- `model`: The propagation model to be trained.
+- `ini_lr`: Initial learning rate.
+- `trainloss`: Loss function for training.
+- `dataloss`: Loss function for validation and early stopping.
+- `ratioₜ`: Split ratio for training/validation data.
+- ... (all other training parameters)
+"""
+function fit!(model::DataDrivenPropagationModel;
+            inilearnrate::Real = 0.001,
+            trainloss = rmseloss,       # Assumes `rmseloss` is defined
+            dataloss = rmseloss,        # Assumes `rmseloss` is defined
+            ratioₜ::Real = 0.7,
+            seed = false,
+            maxepoch::Int = 100000,     # Shortened for practical use
+            ncount::Int = 5000,
+            minlearnrate::Real = 1e-6,
+            reducedlearnrate::Real = 10.0,
+            showloss::Bool = false)
+
+    # to ensure reproducibility
+    seed == true && Random.seed!(6)
+
+    println("Starting model training for $(typeof(model))...")
+
+    # Call original training function
+    ModelFit!(model, inilearnrate, trainloss, dataloss, ratioₜ, seed, maxepoch, ncount, minlearnrate, reducedlearnrate, showloss)
+
+    println("Training complete.")
+    return model  # Return the trained model
+end
+
+
 
 """
 $(SIGNATURES)
@@ -100,15 +137,15 @@ Calculate transmission coefficient at location `rx` using a data-driven physics-
 
 - `model`: data-driven physics-based propagation model
 - `tx`: acoustic source. This is optional. Use `missing` or `nothing` for unknown source.
-- `rx`: acoustic receiver location(s) 
+- `rx`: acoustic receiver location(s)
 """
 function UnderwaterAcoustics.transfercoef(model::DataDrivenPropagationModel, tx::Union{Missing, Nothing, AcousticSource}, rx::AcousticReceiver; mode=:coherent) where {T1}
     mode === :coherent || throw(ArgumentError("Unsupported mode :" * string(mode)))
     if tx !== nothing &&  tx !== missing
         model.env.frequency == nominalfrequency(tx) || throw(ArgumentError("Mismatched frequencies in acoustic source and data driven environment"))
-        if  model.env.tx !== missing  
+        if  model.env.tx !== missing
             location(model.env.tx) == location(tx) || throw(ArgumentError("Mismatched location in acoustic source and data driven environment"))
-        else 
+        else
             @warn "Source location is ignored in field calculation"
         end
     end
@@ -129,7 +166,7 @@ function UnderwaterAcoustics.transfercoef(model::DataDrivenPropagationModel, tx:
     mode === :coherent || throw(ArgumentError("Unsupported mode :" * string(mode)))
     if tx !== nothing &&  tx !== missing
         model.env.frequency == nominalfrequency(tx) || throw(ArgumentError("Mismatched frequencies in acoustic source and data driven environment"))
-        if  model.env.tx !== missing   
+        if  model.env.tx !== missing
             location(model.env.tx) == location(tx) || throw(ArgumentError("Mismatched location in acoustic source and data driven environment"))
         else
             @warn "Source location is ignored in field calculation"
@@ -149,7 +186,7 @@ function UnderwaterAcoustics.transfercoef(model::DataDrivenPropagationModel, tx:
     mode === :coherent || throw(ArgumentError("Unsupported mode :" * string(mode)))
     if tx !== nothing &&  tx !== missing
         model.env.frequency == nominalfrequency(tx) || throw(ArgumentError("Mismatched frequencies in acoustic source and data driven environment"))
-        if  model.env.tx !== missing  
+        if  model.env.tx !== missing
             location(model.env.tx) == location(tx) ||  throw(ArgumentError("Mismatched location in acoustic source and data driven environment"))
         else
             @warn "Source location is ignored in field calculation"
@@ -181,7 +218,7 @@ UnderwaterAcoustics.transmissionloss(model::DataDrivenPropagationModel, tx::Unio
 
 
 UnderwaterAcoustics.rays(model::DataDrivenPropagationModel, tx, rx) = throw(ArgumentError("This function is not yet supported"))
-  
+
 UnderwaterAcoustics.eigenrays(model::DataDrivenPropagationModel, tx, rx) = throw(ArgumentError("This function is not yet supported"))
 
 
@@ -205,7 +242,7 @@ struct RayArrival{T1,T2} <: Arrival
     arrivalangle::Missing
     raypath::Missing
 end
-  
+
 """
 $(SIGNATURES)
 Show arrival rays at a location `rx` using a data-driven physics-based propagation model.
@@ -214,7 +251,7 @@ Show arrival rays at a location `rx` using a data-driven physics-based propagati
 - `tx`: acoustic source. This is optional. Use `missing` or `nothing` for unknown source.
 - `rx`: an acoustic receiver
 """
-function UnderwaterAcoustics.arrivals(model::DataDrivenPropagationModel, tx::Union{Missing, Nothing, AcousticSource}, rx::Union{AbstractVector, AcousticReceiver}; threshold = 30) 
+function UnderwaterAcoustics.arrivals(model::DataDrivenPropagationModel, tx::Union{Missing, Nothing, AcousticSource}, rx::Union{AbstractVector, AcousticReceiver}; threshold = 30)
     model isa GPR && throw(ArgumentError("GPR model does not support this function"))
     arrival = model.calculatefield(model, collect(location(rx)); showarrivals = true)
     amp = amp2db.(abs.(arrival))
@@ -222,11 +259,11 @@ function UnderwaterAcoustics.arrivals(model::DataDrivenPropagationModel, tx::Uni
     signficantarrival = arrival[idx]
     idx = sortperm(abs.(signficantarrival), rev = true)
     if model isa RayBasis2D || model isa RayBasis2DCurv
-        rays = [RayArrival(missing, signficantarrival[idx[i]], missing, missing, missing, missing, missing) for i in 1 : length(idx)] 
+        rays = [RayArrival(missing, signficantarrival[idx[i]], missing, missing, missing, missing, missing) for i in 1 : length(idx)]
     elseif model isa RayBasis3DRCNN
-        rays =[RayArrival(model.d[idx[i]] ./ model.env.soundspeed, signficantarrival[idx[i]], missing, missing, missing, missing, missing) for i in 1 : length(idx)] 
+        rays =[RayArrival(model.d[idx[i]] ./ model.env.soundspeed, signficantarrival[idx[i]], missing, missing, missing, missing, missing) for i in 1 : length(idx)]
     else
-        rays =[RayArrival((model.d[idx[i]] .+ model.ed[idx[i]]) ./ model.env.soundspeed, signficantarrival[idx[i]], missing, missing, missing, missing, missing) for i in 1 : length(idx)] 
+        rays =[RayArrival((model.d[idx[i]] .+ model.ed[idx[i]]) ./ model.env.soundspeed, signficantarrival[idx[i]], missing, missing, missing, missing, missing) for i in 1 : length(idx)]
     end
     return rays
 end
