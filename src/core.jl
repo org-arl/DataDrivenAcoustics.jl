@@ -52,7 +52,7 @@ function UnderwaterAcoustics.acoustic_field(pm::DataDrivenPropagationModel, tx::
   reshape(complex.(out[1,:], out[2,:]), size(rxs))
 end
 
-function fit!(pm::DataDrivenPropagationModel, loss, adtype=AutoReverseDiff(); optimizer=Adam(1e-4), maxiters=100, callback=nothing)
+function fit!(pm::DataDrivenPropagationModel, loss, adtype=AutoReverseDiff(compile=true); optimizer=Adam(1e-4), maxiters=100, callback=nothing)
   ofun = OptimizationFunction(loss, adtype)
   oprob = OptimizationProblem(ofun, pm.params)
   sol = solve(oprob, optimizer; maxiters, callback)
@@ -60,8 +60,8 @@ function fit!(pm::DataDrivenPropagationModel, loss, adtype=AutoReverseDiff(); op
   pm
 end
 
-function TransmissionLossMSE(pm::DataDrivenPropagationModel, tx::AbstractAcousticSource, rxs::AbstractArray{<:AbstractAcousticReceiver}, data)
-  let tx = tx, rxs = rxs, data = data
-    (ps, _) -> sum(abs2, transmission_loss(pm(ps), tx, rxs) - data)
+function TransmissionLossMSE(pm::DataDrivenPropagationModel, tx::AbstractAcousticSource, rxs::AbstractArray{<:AbstractAcousticReceiver}, data; sparsity=10f0)
+  let tx = tx, rxs = rxs, data = data, sparsity = sparsity
+    (ps, _) -> sum(abs2, transmission_loss(pm(ps), tx, rxs) - data) + sparsity * sum(abs, ps.A)
   end
 end
