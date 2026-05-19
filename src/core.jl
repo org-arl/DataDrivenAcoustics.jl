@@ -52,10 +52,16 @@ function UnderwaterAcoustics.acoustic_field(pm::DataDrivenPropagationModel, tx::
   reshape(complex.(out[1,:], out[2,:]), size(rxs))
 end
 
-function fit!(pm::DataDrivenPropagationModel, loss, adtype=AutoReverseDiff(compile=true); optimizer=Adam(1e-4), maxiters=100, callback=nothing)
+function fit!(pm::DataDrivenPropagationModel, loss, adtype=AutoReverseDiff(compile=true); optimizer=Adam(1e-4), maxiters=100, minloss=0, show_progress=0)
   ofun = OptimizationFunction(loss, adtype)
   oprob = OptimizationProblem(ofun, pm.params)
-  sol = solve(oprob, optimizer; maxiters, callback)
+  cb = let show_progress = show_progress, minloss = minloss
+    (st, l) -> begin
+      show_progress > 0 && st.iter % show_progress == 0 && println("Iteration $(st.iter), Loss: $l")
+      l < minloss
+    end
+  end
+  sol = solve(oprob, optimizer; maxiters, callback=cb)
   pm.params .= sol.u
   pm
 end
