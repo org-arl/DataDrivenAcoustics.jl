@@ -14,9 +14,9 @@ struct RBNN_2D <: LuxCore.AbstractLuxLayer
 end
 
 LuxCore.initialparameters(rng::AbstractRNG, l::RBNN_2D) = (
-  A = randn(rng, Float32, l.nrays),       # amplitudes
-  ϕ = rand(rng, Float32, l.nrays),        # phases (scaled by 1/2π)
-  θ = rand(rng, Float32, l.nrays)         # ray angles (scaled by 1/2π)
+  A = 1e-4 * randn(rng, Float32, l.nrays),  # amplitudes
+  ϕ = rand(rng, Float32, l.nrays),          # phases (scaled by 1/2π)
+  θ = rand(rng, Float32, l.nrays)           # ray angles (scaled by 1/2π)
 )
 
 LuxCore.initialstates(::AbstractRNG, ::RBNN_2D) = NamedTuple()
