@@ -1,3 +1,5 @@
+[![CI](https://github.com/org-arl/DataDrivenAcoustics.jl/workflows/CI/badge.svg)](https://github.com/org-arl/DataDrivenAcoustics.jl/actions)
+
 # DataDrivenAcoustics
 
 This package is built upon the ideas discussed in our journal paper "Data-Aided Underwater Acoustic Ray Propagation Modeling" published on IEEE Journal of Oceanic Engineering (available [online](https://ieeexplore.ieee.org/abstract/document/10224658)). It provides a Ray-basis neural network implementation for use with [`UnderwaterAcoustics.jl`](https://github.com/org-arl/UnderwaterAcoustics.jl).
