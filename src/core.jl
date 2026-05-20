@@ -8,7 +8,8 @@ import ReverseDiff
 import Random
 import Lux
 
-export DataDrivenPropagationModel, TransmissionLossMSE, Adam, BFGS, LBFGS
+export DataDrivenPropagationModel, TransmissionLossMSE
+export Adam, BFGS, LBFGS
 public fit!
 
 struct DataDrivenPropagationModel{T1,T2} <: AbstractPropagationModel
@@ -66,6 +67,15 @@ function fit!(pm::DataDrivenPropagationModel, loss, adtype=AutoReverseDiff(compi
   pm
 end
 
+"""
+    TransmissionLossMSE(pm, tx, rxs, data; sparsity=10f0)
+
+Loss function for fitting a data-driven propagation model `pm` to observed
+transmission loss data `data` measured at receivers `rxs`. The frequency of
+operation is determined by the source `tx`. The `sparsity` parameter controls
+the L1 regularization strength on the ray amplitudes to promote sparsity in
+the solution.
+"""
 function TransmissionLossMSE(pm::DataDrivenPropagationModel, tx::AbstractAcousticSource, rxs::AbstractArray{<:AbstractAcousticReceiver}, data; sparsity=10f0)
   let tx = tx, rxs = rxs, data = data, sparsity = sparsity
     (ps, _) -> sum(abs2, transmission_loss(pm(ps), tx, rxs) - data) + sparsity * sum(abs, ps.A)

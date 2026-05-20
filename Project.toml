@@ -1,7 +1,7 @@
 name = "DataDrivenAcoustics"
 uuid = "b376a22e-6432-4b80-a794-261b95783a4a"
-version = "0.2.1"
-authors = ["Li Kexin <kexin@nus.edu.sg> and Mandar Chitre <mandar@nus.edu.sg>"]
+version = "0.3.0"
+authors = ["Mandar Chitre <mandar@nus.edu.sg> and Li Kexin <kexin@nus.edu.sg>"]
 
 [deps]
 ComponentArrays = "b0b7db55-cfe3-40fc-9ded-d10e2dbeff66"
@@ -14,12 +14,12 @@ ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
 UnderwaterAcoustics = "0efb1f7a-1ce7-46d2-9f48-546a4c8fbb99"
 
 [compat]
-ComponentArrays = "0.15.38"
-Lux = "1.31.4"
-Optimization = "5.6.1"
-OptimizationOptimJL = "0.4.14"
-OptimizationOptimisers = "0.3.17"
-ReverseDiff = "1.16.2"
+ComponentArrays = "0.15"
+Lux = "1"
+Optimization = "5"
+OptimizationOptimJL = "0.4"
+OptimizationOptimisers = "0.3"
+ReverseDiff = "1"
 UnderwaterAcoustics = "0.7"
 julia = "1.6"
 
